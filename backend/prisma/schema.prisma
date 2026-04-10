@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  phone        String   @unique
+  email        String?  @unique
+  password     String
+  role         String   @default("USER") // USER or ADMIN
+  level        String?  // Standard 8, JCE, MSCE
+  points       Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  notes         Note[]
+  groupsCreated Group[]
+  groupMessages GroupMessage[]
+}
+
+model OtpCode {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  type      String   @default("UPLOAD")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Note {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?
+  fileUrl      String
+  type         String   // "NOTE" or "PAST_PAPER"
+  isPublic     Boolean  @default(false)
+  category     String   // "Standard 8", "JCE", "MSCE"
+  subject      String
+  likes        Int      @default(0)
+  uploaderId   Int
+  uploader     User     @relation(fields: [uploaderId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Group {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  level        String   // "Standard 8", "JCE", "MSCE"
+  creatorId    Int
+  creator      User     @relation(fields: [creatorId], references: [id])
+  messages     GroupMessage[]
+  createdAt    DateTime @default(now())
+}
+
+model GroupMessage {
+  id           Int      @id @default(autoincrement())
+  content      String
+  groupId      Int
+  group        Group    @relation(fields: [groupId], references: [id])
+  senderId     Int
+  sender       User     @relation(fields: [senderId], references: [id])
+  createdAt    DateTime @default(now())
+}

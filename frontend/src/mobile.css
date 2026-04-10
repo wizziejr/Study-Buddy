@@ -1,0 +1,31 @@
+/* Add to the top level styles or App.css */
+@media screen and (max-width: 990px) {
+  .mobile-toggle {
+    display: flex !important;
+  }
+  
+  .sidebar {
+    position: fixed !important;
+    left: -320px;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    margin: 0 !important;
+    height: 100vh !important;
+    background: var(--bg-primary) !important;
+    border-radius: 0 !important;
+  }
+  
+  .sidebar.mobile-open {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+  }
+}
