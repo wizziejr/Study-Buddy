@@ -8,6 +8,8 @@ const {
   deleteUser,
   forgotPassword,
   verifyOtpAndReset,
+  changePassword,
+  updateProfile,
 } = require('../controllers/authController');
 const { protect, admin } = require('../middlewares/authMiddleware');
 
@@ -21,5 +23,7 @@ router.get('/users', protect, admin, getAllUsers);
 router.delete('/users/:id', protect, admin, deleteUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-otp', verifyOtpAndReset);
+router.put('/change-password', protect, changePassword);
+router.put('/update-profile', protect, updateProfile);
 
 module.exports = router;

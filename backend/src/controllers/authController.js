@@ -216,4 +216,55 @@ const verifyOtpAndReset = async (req, res) => {
   }
 };
 
-module.exports = { register, login, validateUsername, getMe, getAllUsers, deleteUser, forgotPassword, verifyOtpAndReset };
+// ─── CHANGE PASSWORD (authenticated) ────────────────────────────────────────
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Both current and new password are required' });
+    }
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(401).json({ message: 'Current password is incorrect' });
+    const pwError = validatePassword(newPassword);
+    if (pwError) return res.status(400).json({ message: pwError });
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } });
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// ─── UPDATE PROFILE (authenticated) ──────────────────────────────────────────
+const updateProfile = async (req, res) => {
+  try {
+    const { username, email, level } = req.body;
+    const data = {};
+    if (username) {
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing && existing.id !== req.user.id) {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+      data.username = username;
+    }
+    if (email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing && existing.id !== req.user.id) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+      data.email = email;
+    }
+    if (level) data.level = level;
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data,
+      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true },
+    });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = { register, login, validateUsername, getMe, getAllUsers, deleteUser, forgotPassword, verifyOtpAndReset, changePassword, updateProfile };

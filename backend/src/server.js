@@ -5,6 +5,7 @@ const morgan = require('morgan');
 
 const authRoutes = require('./routes/authRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const groupRoutes = require('./routes/groupRoutes');
 
 const app = express();
 
@@ -21,10 +22,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/notes', require('./routes/noteRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/groups', groupRoutes);
 
 // Add ping endpoint
 app.get('/api/ping', (req, res) => {
-  res.json({ message: 'StudyBuddy AI API is running' });
+  res.json({ message: 'StudyBuddy API is running' });
 });
 
 const PORT = process.env.PORT || 5000;

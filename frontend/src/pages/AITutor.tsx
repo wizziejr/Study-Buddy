@@ -30,8 +30,8 @@ export default function AITutor() {
       if (!res.ok) throw new Error(data.error || 'Failed to get AI response');
 
       setMessages(prev => [...prev, { role: 'ai', content: data.answer }]);
-    } catch (err: any) {
-      setMessages(prev => [...prev, { role: 'ai', content: `Error: ${err.message}. Please make sure backend is running.` }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'ai', content: `Error: ${err instanceof Error ? err.message : "An error occurred"}. Please make sure backend is running.` }]);
     } finally {
       setIsLoading(false);
     }

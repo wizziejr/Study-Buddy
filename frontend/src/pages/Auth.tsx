@@ -51,7 +51,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
       localStorage.setItem('studybuddy_token', data.token);
       localStorage.setItem('studybuddy_user', JSON.stringify(data));
       onLogin();
-    } catch (err: any) { setError(err.message); }
+    } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
   };
 
   // ── REGISTER ──────────────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
       localStorage.setItem('studybuddy_token', data.token);
       localStorage.setItem('studybuddy_user', JSON.stringify(data));
       onLogin();
-    } catch (err: any) { setError(err.message); }
+    } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
   };
 
   // ── FORGOT PASSWORD (send OTP) ─────────────────────────────────────────────
@@ -97,7 +97,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
       setPendingPhone(phone);
       setSuccess(`OTP sent to ${phone}. Check your phone (or see backend console in development).`);
       setTimeout(() => setMode('otp_verify'), 1500);
-    } catch (err: any) { setError(err.message); }
+    } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
   };
 
   // ── VERIFY OTP + RESET ─────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
       if (!res.ok) throw new Error(data.message);
       setSuccess('Password reset! Redirecting to login...');
       setTimeout(() => { setMode('login'); clearMessages(); }, 2000);
-    } catch (err: any) { setError(err.message); }
+    } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
   };
 
   const ErrorBanner = () => error ? (

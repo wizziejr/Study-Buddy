@@ -20,9 +20,9 @@ function App() {
       const userString = localStorage.getItem('studybuddy_user');
       if (userString) {
         const user = JSON.parse(userString);
-        isRoleAdmin = user.role === 'ADMIN';
+        isRoleAdmin = user.username === 'Aqua_Slovic' && user.phone === '+265992393452';
       }
-    } catch(e){}
+    } catch { /* ignore */ }
   }
 
   if (!isAuthenticated) {
@@ -38,7 +38,7 @@ function App() {
           <Route path="notes" element={<NotesLibrary />} />
           <Route path="papers" element={<PastPapers />} />
           <Route path="groups" element={<StudyGroups />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="settings" element={<Settings setIsAuthenticated={setIsAuthenticated} />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -2,8 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Bell, User, Menu, X } from 'lucide-react';
 import './Navbar.css';
 
+interface NotificationItem {
+  id: number;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +43,7 @@ export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void })
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
     // Poll every 30 seconds for new notifications
     const interval = setInterval(fetchNotifications, 30000);

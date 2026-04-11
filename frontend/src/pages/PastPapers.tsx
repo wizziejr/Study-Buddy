@@ -2,8 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { BookOpen, Search, Download, FileUp, X } from 'lucide-react';
 import './Dashboard.css';
 
+interface Paper {
+  id: number;
+  title: string;
+  subject: string;
+  category: string;
+  fileUrl: string;
+  uploader?: { username: string };
+  createdAt: string;
+}
+
 export default function PastPapers() {
-  const [papers, setPapers] = useState<any[]>([]);
+  const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);

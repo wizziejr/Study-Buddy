@@ -1,14 +1,12 @@
-import { useState } from 'react';
-import { User, Bell, Shield, Palette, Code2, Globe, Phone, GitBranch } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { User, Bell, Shield, Palette, Code2, Globe, Phone, GitBranch, Camera, Check, Loader2, Eye, EyeOff } from 'lucide-react';
+// Developer photo — pic 1.jpeg from assets (copied to avoid space in filename)
+import devPhoto from '../assets/dev-photo.jpeg';
 
-// Attempt to load wizzie.jpg — works automatically once the file is placed in /src/assets/
-let devPhoto: string | undefined;
-try {
-  // @ts-ignore — dynamic import handled by Vite's glob import
-  const modules = import.meta.glob('../assets/wizzie.jpg', { eager: true, as: 'url' });
-  devPhoto = modules['../assets/wizzie.jpg'] as string;
-} catch {
-  devPhoto = undefined;
+const API = 'http://localhost:5000';
+function authHeaders() {
+  const token = localStorage.getItem('studybuddy_token') || '';
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
 const tabs = [
@@ -19,16 +17,163 @@ const tabs = [
   { id: 'developers', label: 'Developers', icon: Code2 },
 ];
 
-export default function Settings() {
-  const [activeTab, setActiveTab] = useState('developers');
-  const user = (() => { try { return JSON.parse(localStorage.getItem('studybuddy_user') || '{}'); } catch { return {}; } })();
+// ── Appearance themes ──────────────────────────────────────────────────────
+const THEMES = [
+  { name: 'Deep Purple',   primary: '#6C5DD3', secondary: '#FF754C', bg: '#0A0A0F', bg2: '#13131A', glow: 'rgba(108,93,211,0.5)' },
+  { name: 'Ocean Blue',    primary: '#4DA1FF', secondary: '#00C875', bg: '#060D1F', bg2: '#0D1828', glow: 'rgba(77,161,255,0.5)' },
+  { name: 'Sunset Orange', primary: '#FF754C', secondary: '#FFD166', bg: '#110A06', bg2: '#1C1008', glow: 'rgba(255,117,76,0.5)' },
+  { name: 'Forest Green',  primary: '#00C875', secondary: '#4DA1FF', bg: '#040F0A', bg2: '#0A1C11', glow: 'rgba(0,200,117,0.5)' },
+  { name: 'Rose Gold',     primary: '#E8698B', secondary: '#F9C784', bg: '#110607', bg2: '#1C0C0F', glow: 'rgba(232,105,139,0.5)' },
+  { name: 'Midnight Cyan', primary: '#00D4FF', secondary: '#A855F7', bg: '#030C10', bg2: '#061420', glow: 'rgba(0,212,255,0.5)' },
+];
+
+function applyTheme(theme: typeof THEMES[0]) {
+  const r = document.documentElement.style;
+  r.setProperty('--accent-primary', theme.primary);
+  r.setProperty('--accent-secondary', theme.secondary);
+  r.setProperty('--accent-glow', theme.glow);
+  r.setProperty('--bg-primary', theme.bg);
+  r.setProperty('--bg-secondary', theme.bg2);
+  localStorage.setItem('sb_theme', JSON.stringify(theme));
+}
+
+// Apply saved theme on load
+(() => {
+  try {
+    const saved = localStorage.getItem('sb_theme');
+    if (saved) applyTheme(JSON.parse(saved));
+  } catch { /* ignore */ }
+})();
+
+interface SettingsProps {
+  setIsAuthenticated?: (val: boolean) => void;
+}
+
+export default function Settings({ setIsAuthenticated }: SettingsProps) {
+  const [activeTab, setActiveTab] = useState('profile');
+
+  const storedUser = (() => { try { return JSON.parse(localStorage.getItem('studybuddy_user') || '{}'); } catch { return {}; } })();
+
+  // ── Profile state ────────────────────────────────────────────────────────
+  const [profileForm, setProfileForm] = useState({
+    username: storedUser.username || '',
+    email: storedUser.email || '',
+    level: storedUser.level || 'MSCE',
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(storedUser.avatar || null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result as string;
+      setAvatarSrc(src);
+      const updated = { ...storedUser, avatar: src };
+      localStorage.setItem('studybuddy_user', JSON.stringify(updated));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveProfile = async () => {
+    setProfileSaving(true); setProfileMsg(null);
+    try {
+      const res = await fetch(`${API}/api/auth/update-profile`, {
+        method: 'PUT', headers: authHeaders(), body: JSON.stringify(profileForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { setProfileMsg({ type: 'error', text: data.message }); return; }
+      const updated = { ...storedUser, ...data };
+      localStorage.setItem('studybuddy_user', JSON.stringify(updated));
+      setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
+    } catch { setProfileMsg({ type: 'error', text: 'Network error. Make sure the server is running.' }); }
+    finally { setProfileSaving(false); }
+  };
+
+  const handleSignOut = () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      localStorage.removeItem('studybuddy_token');
+      localStorage.removeItem('studybuddy_user');
+      if (setIsAuthenticated) setIsAuthenticated(false);
+    }
+  };
+
+  // ── Notifications state ───────────────────────────────────────────────────
+  const [notifToggles, setNotifToggles] = useState({ uploads: true, groups: true, tutor: false });
+
+  // ── Password state ────────────────────────────────────────────────────────
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwMsg, setPwMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
+
+  const savePassword = async () => {
+    setPwMsg(null);
+    if (!pwForm.currentPassword || !pwForm.newPassword) { setPwMsg({ type: 'error', text: 'All fields are required' }); return; }
+    if (pwForm.newPassword !== pwForm.confirmPassword) { setPwMsg({ type: 'error', text: 'New passwords do not match' }); return; }
+    setPwSaving(true);
+    try {
+      const res = await fetch(`${API}/api/auth/change-password`, {
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPwMsg({ type: 'error', text: data.message }); return; }
+      setPwMsg({ type: 'success', text: 'Password changed successfully!' });
+      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch { setPwMsg({ type: 'error', text: 'Network error. Make sure the server is running.' }); }
+    finally { setPwSaving(false); }
+  };
+
+  // ── Appearance state ──────────────────────────────────────────────────────
+  const savedTheme = (() => { try { return JSON.parse(localStorage.getItem('sb_theme') || 'null'); } catch { return null; } })();
+  const [activeTheme, setActiveTheme] = useState<typeof THEMES[0]>(savedTheme || THEMES[0]);
+  const [customPrimary, setCustomPrimary] = useState(activeTheme.primary);
+  const [customSecondary, setCustomSecondary] = useState(activeTheme.secondary);
+  const [customBg, setCustomBg] = useState(activeTheme.bg);
+
+  const applyCustom = useCallback(() => {
+    const custom = { name: 'Custom', primary: customPrimary, secondary: customSecondary, bg: customBg, bg2: customBg, glow: `${customPrimary}80` };
+    applyTheme(custom);
+    setActiveTheme(custom);
+  }, [customPrimary, customSecondary, customBg]);
+
+  // ── Shared styles ─────────────────────────────────────────────────────────
+  const msgStyle = (type: 'success' | 'error') => ({
+    color: type === 'success' ? '#00C875' : '#FF754C',
+    background: type === 'success' ? 'rgba(0,200,117,0.08)' : 'rgba(255,117,76,0.08)',
+    border: `1px solid ${type === 'success' ? 'rgba(0,200,117,0.3)' : 'rgba(255,117,76,0.3)'}`,
+    padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem',
+  });
+
+  const pwInputWrapper = (show: boolean, toggle: () => void, field: keyof typeof pwForm, placeholder: string) => (
+    <div style={{ position: 'relative' }}>
+      <input
+        type={show ? 'text' : 'password'}
+        className="glass-input"
+        placeholder={placeholder}
+        value={pwForm[field]}
+        onChange={e => setPwForm(f => ({ ...f, [field]: e.target.value }))}
+        style={{ paddingRight: '3rem' }}
+      />
+      <button
+        onClick={toggle}
+        style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+      >
+        {show ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', gap: '1.5rem', minHeight: '100%' }}>
 
-      {/* ── Sidebar Tabs ──────────────────────────────────────────────────── */}
+      {/* ── Sidebar Tabs ── */}
       <div className="glass-panel" style={{ width: '220px', flexShrink: 0, padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <h3 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem', marginBottom: '0.5rem' }}>Settings</h3>
+        <h3 style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem', marginBottom: '0.5rem' }}>Settings</h3>
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -50,36 +195,81 @@ export default function Settings() {
         ))}
       </div>
 
-      {/* ── Content Panel ─────────────────────────────────────────────────── */}
+      {/* ── Content Panel ── */}
       <div className="glass-panel animate-fade-in" style={{ flex: 1, padding: '2rem' }}>
 
         {/* ══ PROFILE ══ */}
         {activeTab === 'profile' && (
           <div>
             <h2 style={{ marginBottom: '0.5rem' }}>My Profile</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Update your personal information.</p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Customise your public identity and personal info.</p>
+
+            {/* Avatar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  width: '90px', height: '90px', borderRadius: '50%',
+                  border: '3px solid var(--accent-primary)', boxShadow: '0 0 20px var(--accent-glow)',
+                  overflow: 'hidden', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {avatarSrc
+                    ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <User size={36} color="#fff" />}
+                </div>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  style={{
+                    position: 'absolute', bottom: 0, right: 0,
+                    width: '28px', height: '28px', borderRadius: '50%',
+                    background: 'var(--accent-primary)', border: '2px solid var(--bg-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  }}
+                >
+                  <Camera size={13} color="#fff" />
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{storedUser.username || 'Student'}</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{storedUser.phone || ''}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{storedUser.role || 'USER'} · {storedUser.level || 'MSCE'}</p>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '480px' }}>
               <div>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Username</label>
-                <input className="glass-input" defaultValue={user.username || ''} />
+                <input className="glass-input" value={profileForm.username} onChange={e => setProfileForm(f => ({ ...f, username: e.target.value }))} />
               </div>
               <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Phone</label>
-                <input className="glass-input" defaultValue={user.phone || ''} disabled style={{ opacity: 0.6 }} />
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Phone (cannot change)</label>
+                <input className="glass-input" value={storedUser.phone || ''} disabled style={{ opacity: 0.5 }} />
               </div>
               <div>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Email (optional)</label>
-                <input className="glass-input" placeholder="Add email..." defaultValue={user.email || ''} />
+                <input className="glass-input" placeholder="Add email..." value={profileForm.email} onChange={e => setProfileForm(f => ({ ...f, email: e.target.value }))} />
               </div>
               <div>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Education Level</label>
-                <select className="glass-input" defaultValue={user.level || 'MSCE'}>
+                <select className="glass-input" value={profileForm.level} onChange={e => setProfileForm(f => ({ ...f, level: e.target.value }))}>
                   <option value="Standard 8">Standard 8</option>
                   <option value="JCE">JCE</option>
                   <option value="MSCE">MSCE</option>
                 </select>
               </div>
-              <button className="glass-button primary" style={{ width: 'fit-content' }}>Save Changes</button>
+
+              {profileMsg && <p style={msgStyle(profileMsg.type)}>{profileMsg.text}</p>}
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                <button className="glass-button primary" onClick={saveProfile} disabled={profileSaving}>
+                  {profileSaving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={16} />}
+                  {profileSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button className="glass-button" onClick={handleSignOut} style={{ borderColor: '#FF754C', color: '#FF754C' }}>
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -90,32 +280,54 @@ export default function Settings() {
             <h2 style={{ marginBottom: '0.5rem' }}>Notifications</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Control how you receive alerts.</p>
             {[
-              { label: 'New uploads in your subjects', desc: 'Get notified when someone uploads a note or past paper' },
-              { label: 'Study Group activity', desc: 'Messages and announcements from your groups' },
-              { label: 'AI Tutor suggestions', desc: 'Weekly study tips tailored to your level' },
+              { key: 'uploads' as const, label: 'New uploads in your subjects', desc: 'Get notified when someone uploads a note or past paper' },
+              { key: 'groups' as const, label: 'Study Group activity', desc: 'Messages and announcements from your groups' },
+              { key: 'tutor' as const, label: 'Tutor suggestions', desc: 'Weekly study tips tailored to your level' },
             ].map(item => (
-              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--bg-glass-border)' }}>
+              <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--bg-glass-border)' }}>
                 <div>
                   <p style={{ fontWeight: 500 }}>{item.label}</p>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{item.desc}</p>
                 </div>
-                <div style={{ width: '44px', height: '24px', background: 'var(--accent-primary)', borderRadius: '99px', cursor: 'pointer' }} />
+                <button
+                  onClick={() => setNotifToggles(t => ({ ...t, [item.key]: !t[item.key] }))}
+                  style={{
+                    width: '48px', height: '26px', borderRadius: '99px', border: 'none', cursor: 'pointer',
+                    background: notifToggles[item.key] ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                    transition: 'background 0.3s', position: 'relative', flexShrink: 0,
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute', top: '3px', left: notifToggles[item.key] ? 'calc(100% - 22px)' : '3px',
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: '#fff', transition: 'left 0.3s',
+                  }} />
+                </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* ══ PRIVACY ══ */}
+        {/* ══ PRIVACY & SECURITY ══ */}
         {activeTab === 'privacy' && (
           <div>
             <h2 style={{ marginBottom: '0.5rem' }}>Privacy & Security</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Keep your account safe.</p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Keep your account safe with a strong password.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '480px' }}>
-              <p style={{ fontWeight: 600, marginBottom: '-0.5rem' }}>Change Password</p>
-              <input type="password" className="glass-input" placeholder="Current password" />
-              <input type="password" className="glass-input" placeholder="New password" />
-              <input type="password" className="glass-input" placeholder="Confirm new password" />
-              <button className="glass-button primary" style={{ width: 'fit-content' }}>Update Password</button>
+              <div className="glass-panel" style={{ padding: '1.5rem', border: '1px solid var(--bg-glass-border)' }}>
+                <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem' }}>Change Password</h3>
+                {pwInputWrapper(showPw.current, () => setShowPw(s => ({ ...s, current: !s.current })), 'currentPassword', 'Current password')}
+                {pwInputWrapper(showPw.new, () => setShowPw(s => ({ ...s, new: !s.new })), 'newPassword', 'New password')}
+                {pwInputWrapper(showPw.confirm, () => setShowPw(s => ({ ...s, confirm: !s.confirm })), 'confirmPassword', 'Confirm new password')}
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Password must be 7+ characters with uppercase, lowercase, and a symbol.
+                </p>
+                {pwMsg && <p style={msgStyle(pwMsg.type)}>{pwMsg.text}</p>}
+                <button className="glass-button primary" onClick={savePassword} disabled={pwSaving} style={{ width: 'fit-content' }}>
+                  {pwSaving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Shield size={16} />}
+                  {pwSaving ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -124,15 +336,75 @@ export default function Settings() {
         {activeTab === 'appearance' && (
           <div>
             <h2 style={{ marginBottom: '0.5rem' }}>Appearance</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Personalise your StudyBuddy experience.</p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              {[['#6C5DD3', 'Default Purple'], ['#FF754C', 'Sunset Orange'], ['#4DA1FF', 'Ocean Blue'], ['#00C875', 'Forest Green']].map(([color, name]) => (
-                <div key={color} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: color, boxShadow: `0 4px 16px ${color}66` }} />
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{name}</span>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Personalise StudyBuddy completely — colours change across the whole app instantly.</p>
+
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Preset Themes</h4>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
+              {THEMES.map(theme => {
+                const isActive = activeTheme.name === theme.name;
+                return (
+                  <button
+                    key={theme.name}
+                    onClick={() => { applyTheme(theme); setActiveTheme(theme); setCustomPrimary(theme.primary); setCustomSecondary(theme.secondary); setCustomBg(theme.bg); }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem',
+                      background: 'none', border: 'none', cursor: 'pointer', padding: '0.75rem',
+                      borderRadius: 'var(--radius-md)',
+                      outline: isActive ? `2px solid var(--accent-primary)` : '2px solid transparent',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        width: '56px', height: '56px', borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 100%)`,
+                        boxShadow: isActive ? `0 4px 20px ${theme.glow}` : 'none',
+                        transition: 'all 0.3s',
+                      }} />
+                      {isActive && (
+                        <div style={{
+                          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Check size={20} color="#fff" />
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{theme.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Custom Colours</h4>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
+              {[
+                { label: 'Primary Accent', val: customPrimary, set: setCustomPrimary },
+                { label: 'Secondary Accent', val: customSecondary, set: setCustomSecondary },
+                { label: 'Background', val: customBg, set: setCustomBg },
+              ].map(({ label, val, set }) => (
+                <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{label}</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      value={val}
+                      onChange={e => set(e.target.value)}
+                      style={{ width: '48px', height: '48px', border: '2px solid var(--bg-glass-border)', borderRadius: '8px', cursor: 'pointer', background: 'none', padding: '2px' }}
+                    />
+                    <input
+                      className="glass-input"
+                      value={val}
+                      onChange={e => set(e.target.value)}
+                      style={{ width: '110px', fontFamily: 'monospace', fontSize: '0.85rem' }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
+            <button className="glass-button primary" onClick={applyCustom} style={{ marginBottom: '1rem' }}>
+              <Palette size={16} /> Apply Custom Theme
+            </button>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Theme is saved and persists across page refreshes.</p>
           </div>
         )}
 
@@ -140,43 +412,26 @@ export default function Settings() {
         {activeTab === 'developers' && (
           <div>
             <h2 style={{ marginBottom: '0.5rem' }}>Developers</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem' }}>The minds behind StudyBuddy AI.</p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem' }}>The minds behind this platform.</p>
 
-            {/* Developer Card */}
             <div style={{
               display: 'flex', gap: '2rem', alignItems: 'flex-start',
               padding: '2rem', borderRadius: 'var(--radius-md)',
               background: 'linear-gradient(135deg, rgba(108,93,211,0.12), rgba(255,117,76,0.05))',
-              border: '1px solid rgba(108,93,211,0.3)',
-              flexWrap: 'wrap',
+              border: '1px solid rgba(108,93,211,0.3)', flexWrap: 'wrap',
             }}>
               {/* Photo */}
               <div style={{ flexShrink: 0 }}>
-                {devPhoto ? (
-                  <img
-                    src={devPhoto}
-                    alt="Wisdom Malata"
-                    style={{
-                      width: '130px', height: '130px', borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '3px solid var(--accent-primary)',
-                      boxShadow: '0 0 24px var(--accent-glow)',
-                    }}
-                  />
-                ) : (
-                  <div style={{
+                <img
+                  src={devPhoto}
+                  alt="Wisdom Malata"
+                  style={{
                     width: '130px', height: '130px', borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    objectFit: 'cover',
                     border: '3px solid var(--accent-primary)',
                     boxShadow: '0 0 24px var(--accent-glow)',
-                    fontSize: '0.65rem', color: '#fff', gap: '0.25rem', padding: '0.5rem',
-                    textAlign: 'center',
-                  }}>
-                    <User size={32} />
-                    <span>Add wizzie.jpg to assets/</span>
-                  </div>
-                )}
+                  }}
+                />
               </div>
 
               {/* Info */}
@@ -190,19 +445,16 @@ export default function Settings() {
                   }}>LEAD DEV</span>
                 </div>
                 <p style={{ color: 'var(--accent-secondary)', fontWeight: 600, marginBottom: '1rem', fontSize: '0.95rem' }}>
-                  Full Stack Developer &amp; AI Engineer
+                  Full Stack Developer &amp; Software Engineer
                 </p>
                 <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                  Wisdom Malata is a passionate Full Stack Developer and AI Engineer from Malawi,
-                  dedicated to bridging the digital gap in African education. He designed and built
-                  StudyBuddy AI from the ground up — from database architecture and REST API design
-                  to the premium glassmorphism UI — with the mission of giving every Malawian student
-                  access to world-class learning tools. Proficient in React, Node.js, Python, and
-                  modern AI integration, Wisdom continues to push the boundary of what technology
-                  can do for African youth.
+                  Wisdom Malata is a passionate Full Stack Developer from Malawi, dedicated to bridging
+                  the digital gap in African education. He designed and built this platform from the
+                  ground up — from database architecture and REST API design to the premium glassmorphism
+                  UI — with the mission of giving every Malawian student access to world-class learning
+                  tools. Proficient in React, Node.js, Python, and modern software engineering practices.
                 </p>
 
-                {/* Links */}
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <a href="https://wisdom-malata.vercel.app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                     <button className="glass-button" style={{ gap: '0.5rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
@@ -221,10 +473,12 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Platform credits */}
+            {/* Credits */}
             <div style={{ marginTop: '2rem', padding: '1rem 1.5rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--bg-glass-border)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                <strong style={{ color: 'var(--text-primary)' }}>StudyBuddy AI</strong> — Built for Malawian students (Standard 8, JCE & MSCE) · Powered by <strong style={{ color: 'var(--accent-primary)' }}>Google Gemini 1.5 Flash</strong> · Database hosted on <strong>SQLite + Prisma</strong> · SMS via <strong>Africa's Talking</strong>.
+                <strong style={{ color: 'var(--text-primary)' }}>StudyBuddy</strong> — Built for Malawian students (Standard 8, JCE &amp; MSCE) ·
+                Powered by <strong style={{ color: 'var(--accent-primary)' }}>Google Gemini 1.5 Flash</strong> ·
+                Database on <strong>SQLite + Prisma</strong> · SMS via <strong>Africa's Talking</strong>.
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                 © {new Date().getFullYear()} Wisdom Malata / Aqua_Slovic. All rights reserved.
@@ -234,6 +488,11 @@ export default function Settings() {
         )}
 
       </div>
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        select.glass-input option { background: var(--bg-secondary, #13131A); color: #fff; }
+      `}</style>
     </div>
   );
 }

@@ -2,11 +2,23 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, BookOpen, Download, ThumbsUp, FileUp, X } from 'lucide-react';
 import './NotesLibrary.css';
 
+interface Note {
+  id: number;
+  title: string;
+  subject: string;
+  description: string;
+  category: string;
+  fileUrl: string;
+  likes: number;
+  uploader?: { username: string };
+  createdAt: string;
+}
+
 export default function NotesLibrary() {
   const [activeTab, setActiveTab] = useState('All Levels');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [notes, setNotes] = useState<any[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
@@ -30,6 +42,7 @@ export default function NotesLibrary() {
 
   useEffect(() => {
     fetchNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const handleUploadSubmit = async (e: React.FormEvent) => {

@@ -2,8 +2,17 @@ import { useState, useEffect } from 'react';
 import { Users, FileText, Activity, Trash2 } from 'lucide-react';
 import './Dashboard.css';
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  level: string;
+  createdAt: string;
+}
+
 export default function AdminDashboard() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState('');
 
@@ -40,8 +49,8 @@ export default function AdminDashboard() {
       
       // Update UI 
       fetchUsers();
-    } catch(err: any) {
-      setActionError(err.message);
+    } catch(err) {
+      setActionError(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
@@ -102,7 +111,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u: any) => (
+                  {users.map((u) => (
                     <tr key={u.id} style={{borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s'}} className="hover:bg-gray-800">
                       <td style={{padding: '1rem', fontWeight: 600}}>{u.username}</td>
                       <td style={{padding: '1rem', color: 'var(--text-secondary)'}}>{u.email}</td>

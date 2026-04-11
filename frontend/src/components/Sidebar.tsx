@@ -20,7 +20,6 @@ export default function Sidebar({ isMobileOpen }: SidebarProps) {
     <aside className={`sidebar glass-panel ${isMobileOpen ? 'mobile-open' : ''}`}>
       <div className="logo-container">
         <h1 className="logo-text">Study<span>Buddy</span></h1>
-        <span className="badge">AI PRO</span>
       </div>
 
       <nav className="nav-menu">
