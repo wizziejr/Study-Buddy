@@ -176,9 +176,6 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            <div style={{ textAlign: 'center', marginTop: '-0.5rem', fontSize: '0.8rem', color: '#666' }}>
-              Test login: username "Aqua_Slovic", password "Wizzie07?"
-            </div>
             <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
               <span className="switch-link" onClick={() => { setMode('forgot'); clearMessages(); }} style={{ fontSize: '0.85rem' }}>
                 Forgot Password?
