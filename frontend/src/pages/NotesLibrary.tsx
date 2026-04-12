@@ -28,7 +28,7 @@ export default function NotesLibrary() {
   const fetchNotes = async () => {
     try {
       const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch(`http://localhost:5000/api/notes?type=NOTE&category=${activeTab}`, {
+      const res = await fetch(`/api/notes?type=NOTE&category=${activeTab}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -59,7 +59,7 @@ export default function NotesLibrary() {
 
     try {
       const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch('http://localhost:5000/api/notes/upload', {
+      const res = await fetch('/api/notes/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }, // Do NOT set content-type manually with FormData
         body: formData
@@ -155,7 +155,7 @@ export default function NotesLibrary() {
               <div className="note-stats">
                 <span className="stat"><ThumbsUp size={14} /> {note.likes || 0}</span>
               </div>
-              <a href={`http://localhost:5000${note.fileUrl}`} download target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none'}}>
+              <a href={`${note.fileUrl}`} download target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none'}}>
                 <button className="glass-button icon-only">
                   <Download size={16} />
                 </button>

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, Plus, X, MessageCircle, Trash2, Loader2, ArrowLeft, Settings, Shield, Ban, Image as ImageIcon } from 'lucide-react';
 import './Dashboard.css';
 
-interface User { _id?: number; id?: number; username: string; role: string; }
 interface GroupMember { id: number; role: string; isBanned: boolean; user: { id: number; username: string; } }
 interface Group {
   id: number; name: string; description?: string; level: string; rules?: string;
@@ -11,7 +10,7 @@ interface Group {
   _count: { messages: number }; createdAt: string;
 }
 
-const API = 'http://localhost:5000';
+const API = '';
 function token() { return localStorage.getItem('studybuddy_token') || ''; }
 function authHeaders() { return { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }; }
 
@@ -25,7 +24,7 @@ export default function StudyGroups() {
   const [activeGroup, setActiveGroup] = useState<Group | null>(null);
   
   // Active Chat State
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<{ id: number; content: string; createdAt: string; sender?: { id: number; username: string }; senderId?: number }[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
   
@@ -108,7 +107,7 @@ export default function StudyGroups() {
       await fetch(`${API}/api/groups/${group.id}/join`, { method: 'POST', headers: authHeaders() });
       setActiveGroup(group);
       setShowSettingsSidebar(false);
-    } catch {}
+    } catch { /* silent — if join fails user stays on list view */ }
   };
 
   const handleSendMessage = async () => {
@@ -136,7 +135,7 @@ export default function StudyGroups() {
           method: 'PUT', headers: authHeaders(), body: JSON.stringify({ action })
        });
        if(res.ok) fetchGroupDetails(activeGroup.id);
-    } catch {}
+    } catch { /* silent — members list will refresh on next poll */ }
   };
 
   const handleUpdateGroupSettings = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -153,7 +152,7 @@ export default function StudyGroups() {
          setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
          alert('Settings saved!');
        }
-    } catch {}
+    } catch { /* silent — settings save error handled by alert */ }
   };
 
   const levelColor: Record<string, string> = {

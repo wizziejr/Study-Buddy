@@ -1,16 +1,39 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Brain, Clock, Target, Flame, Phone } from 'lucide-react';
+import { BookOpen, Brain, Clock, Flame, Phone } from 'lucide-react';
 import './Dashboard.css';
 
+interface UserData {
+  id?: number;
+  username?: string;
+  email?: string;
+  role?: string;
+  level?: string;
+  phone?: string;
+  points?: number;
+  currentStreak?: number;
+  studyTimeDaily?: number;
+  canViewAllSecondary?: boolean;
+}
+
+interface NoteData {
+  id: number;
+  title: string;
+  subject: string;
+  category: string;
+  type: string;
+  createdAt: string;
+  uploaderId: number;
+}
+
 export default function Dashboard() {
-  const [user, setUser] = useState<any>({});
-  const [myNotes, setMyNotes] = useState<any[]>([]);
+  const [user, setUser] = useState<UserData>({});
+  const [myNotes, setMyNotes] = useState<NoteData[]>([]);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('studybuddy_token');
-        const res = await fetch('http://localhost:5000/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
           setUser(data);
@@ -29,12 +52,12 @@ export default function Dashboard() {
     const fetchNotes = async () => {
       try {
         const token = localStorage.getItem('studybuddy_token');
-        const res = await fetch('http://localhost:5000/api/notes', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch('/api/notes', { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
-          setMyNotes(data.filter((n: any) => n.uploaderId === user.id));
+          setMyNotes(data.filter((n: NoteData) => n.uploaderId === user.id));
         }
-      } catch { }
+      } catch { /* silent — fall through with empty notes */ }
     };
     if (user.id) fetchNotes();
   }, [user.id]);

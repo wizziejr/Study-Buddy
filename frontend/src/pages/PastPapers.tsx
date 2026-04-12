@@ -23,7 +23,7 @@ export default function PastPapers() {
   const fetchPapers = async () => {
     try {
       const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch(`http://localhost:5000/api/notes?type=PAST_PAPER`, {
+      const res = await fetch(`/api/notes?type=PAST_PAPER`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -52,7 +52,7 @@ export default function PastPapers() {
 
     try {
       const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch('http://localhost:5000/api/notes/upload', {
+      const res = await fetch('/api/notes/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
@@ -143,7 +143,7 @@ export default function PastPapers() {
                     <td style={{padding: '1rem'}}><span style={{background: 'rgba(77, 161, 255, 0.2)', color: '#4DA1FF', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem'}}>{paper.category}</span></td>
                     <td style={{padding: '1rem', color: 'var(--text-secondary)'}}>{paper.uploader?.username}</td>
                     <td style={{padding: '1rem'}}>
-                      <a href={`http://localhost:5000${paper.fileUrl}`} download target="_blank" rel="noopener noreferrer">
+                      <a href={`${paper.fileUrl}`} download target="_blank" rel="noopener noreferrer">
                         <button className="glass-button icon-only">
                           <Download size={16} />
                         </button>

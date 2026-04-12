@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BookOpen, Home, Library, Brain, Users, Settings } from 'lucide-react';
+import { BookOpen, Home, Library, Brain, Users } from 'lucide-react';
 import './Sidebar.css';
 
 interface SidebarProps {

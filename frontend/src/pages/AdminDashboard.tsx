@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, FileText, Activity, Trash2, Search, Filter } from 'lucide-react';
+import { Users, FileText, Trash2, Search } from 'lucide-react';
 import './Dashboard.css';
 
 interface User {
@@ -37,8 +37,8 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('studybuddy_token');
       const [usersRes, notesRes] = await Promise.all([
-        fetch('http://localhost:5000/api/auth/users', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('http://localhost:5000/api/notes', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/auth/users', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/notes', { headers: { Authorization: `Bearer ${token}` } })
       ]);
       if (usersRes.ok) setUsers(await usersRes.json());
       if (notesRes.ok) setNotes(await notesRes.json());
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
       const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch(`http://localhost:5000/api/auth/users/${id}`, {
+      const res = await fetch(`/api/auth/users/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
     if (!window.confirm("Are you sure you want to delete this resource?")) return;
     try {
       const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch(`http://localhost:5000/api/notes/${id}`, {
+      const res = await fetch(`/api/notes/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

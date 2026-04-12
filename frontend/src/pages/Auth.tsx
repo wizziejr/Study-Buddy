@@ -41,7 +41,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
     e.preventDefault();
     clearMessages();
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: loginData.identifier, password: loginData.password }),
@@ -62,7 +62,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
     if (regData.password !== regData.confirmPassword) return setError("Passwords don't match");
     const phone = '+265' + regData.phoneSuffix.replace(/^0+/, '');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -87,7 +87,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
     clearMessages();
     const phone = '+265' + forgotPhone.replace(/^0+/, '');
     try {
-      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -106,7 +106,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
     clearMessages();
     if (otpData.newPassword !== otpData.confirmPassword) return setError("Passwords don't match");
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: pendingPhone, otp: otpData.otp, newPassword: otpData.newPassword }),

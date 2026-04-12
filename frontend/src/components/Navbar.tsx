@@ -10,6 +10,12 @@ interface NotificationItem {
   createdAt: string;
 }
 
+interface UserData {
+  profilePicUrl?: string;
+  level?: string;
+  role?: string;
+}
+
 export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -17,7 +23,7 @@ export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void })
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const [user, setUser] = useState<any>(() => {
+  const [user, setUser] = useState<UserData>(() => {
     try {
       return JSON.parse(localStorage.getItem('studybuddy_user') || '{}');
     } catch { return {}; }
@@ -28,28 +34,16 @@ export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void })
     const onStorage = () => {
       try {
         setUser(JSON.parse(localStorage.getItem('studybuddy_user') || '{}'));
-      } catch {}
+      } catch { /* ignore malformed JSON */ }
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const fetchNotifications = async () => {
-    try {
-      const token = localStorage.getItem('studybuddy_token');
-      const res = await fetch('http://localhost:5000/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data);
-      }
-    } catch { /* silent */ }
-  };
 
   const markRead = async () => {
     const token = localStorage.getItem('studybuddy_token');
-    await fetch('http://localhost:5000/api/notifications/mark-read', {
+    await fetch('/api/notifications/mark-read', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -57,8 +51,17 @@ export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void })
   };
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const poll = async () => {
+      try {
+        const tok = localStorage.getItem('studybuddy_token');
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${tok}` },
+        });
+        if (res.ok) setNotifications(await res.json());
+      } catch { /* silent */ }
+    };
+    poll();
+    const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -151,7 +154,7 @@ export default function Navbar({ toggleSidebar }: { toggleSidebar: () => void })
         >
           <div className="avatar" style={{ overflow: 'hidden' }}>
             {user.profilePicUrl ? (
-               <img src={`http://localhost:5000${user.profilePicUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+               <img src={`${user.profilePicUrl}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
                <User size={20} />
             )}

@@ -3,7 +3,7 @@ import { User, Bell, Shield, Palette, Code2, Globe, Phone, GitBranch, Camera, Ch
 // Developer photo — pic 1.jpeg from assets (copied to avoid space in filename)
 import devPhoto from '../assets/dev-photo.jpeg';
 
-const API = 'http://localhost:5000';
+const API = '';
 function authHeaders() {
   const token = localStorage.getItem('studybuddy_token') || '';
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
@@ -65,7 +65,6 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(storedUser.profilePicUrl || storedUser.avatar || null);
-  const [bgSrc, setBgSrc] = useState<string | null>(storedUser.backgroundImageUrl || null);
   const fileRef = useRef<HTMLInputElement>(null);
   const bgFileRef = useRef<HTMLInputElement>(null);
 
@@ -87,8 +86,8 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const src = reader.result as string;
-      setBgSrc(src);
+      // Preview is applied via body style after save; no local state needed
+      void (reader.result as string);
     };
     reader.readAsDataURL(file);
   };
@@ -121,7 +120,7 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
       
       // Update backgrounds right away if possible
       if (data.backgroundImageUrl) {
-        document.body.style.backgroundImage = `url(http://localhost:5000${data.backgroundImageUrl})`;
+        document.body.style.backgroundImage = `url(${data.backgroundImageUrl})`;
         document.body.style.backgroundSize = 'cover';
         document.body.style.backgroundPosition = 'center';
         document.body.style.backgroundAttachment = 'fixed';
@@ -134,9 +133,8 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
     if (window.confirm('Are you sure you want to sign out?')) {
       localStorage.removeItem('studybuddy_token');
       localStorage.removeItem('studybuddy_user');
-      // setIsAuthenticated is a callback from parent (Navbar or page)
       if (setIsAuthenticated) {
-        (setIsAuthenticated as unknown as () => void)();
+        setIsAuthenticated(false);
       } else {
         window.location.href = '/login';
       }
@@ -280,7 +278,7 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
                   overflow: 'hidden', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                    {avatarSrc && avatarSrc.startsWith('/uploads') ? <img src={`http://localhost:5000${avatarSrc}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
+                    {avatarSrc && avatarSrc.startsWith('/uploads') ? <img src={`${avatarSrc}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
                      avatarSrc ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : <User size={36} color="#fff" />}
                 </div>

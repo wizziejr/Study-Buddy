@@ -63,6 +63,7 @@ const register = async (req, res) => {
     });
 
     res.status(201).json({
+      id: user.id,
       _id: user.id,
       username: user.username,
       phone: user.phone,
@@ -101,6 +102,7 @@ const login = async (req, res) => {
     if (!match) return res.status(401).json({ message: 'Incorrect password' });
 
     res.json({
+      id: user.id,
       _id: user.id,
       username: user.username,
       phone: user.phone,
