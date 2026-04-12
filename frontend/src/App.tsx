@@ -27,22 +27,26 @@ function App() {
     } catch { /* ignore */ }
   }
 
-  if (!isAuthenticated) {
-    return <Auth onLogin={() => setIsAuthenticated(true)} />;
-  }
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={isRoleAdmin ? <AdminDashboard /> : <Dashboard />} />
-          <Route path="tutor" element={<AITutor />} />
-          <Route path="notes" element={<NotesLibrary />} />
-          <Route path="papers" element={<PastPapers />} />
-          <Route path="groups" element={<StudyGroups />} />
+        {/* If visiting /login directly but already authenticated, go to dashboard */}
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Auth onLogin={() => setIsAuthenticated(true)} />} />
+        
+        {/* Entry point of the site */}
+        <Route path="/" element={isAuthenticated ? <Layout /> : <Auth onLogin={() => setIsAuthenticated(true)} />}>
+          {isAuthenticated && (
+            <>
+              <Route index element={isRoleAdmin ? <AdminDashboard /> : <Dashboard />} />
+              <Route path="tutor" element={<AITutor />} />
+              <Route path="notes" element={<NotesLibrary />} />
+              <Route path="papers" element={<PastPapers />} />
+              <Route path="groups" element={<StudyGroups />} />
+            </>
+          )}
         </Route>
-        {/* Redirect /login to root — auth is handled by App state */}
-        <Route path="/login" element={<Navigate to="/" replace />} />
+        
+        {/* Catch-all: redirect to root */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Lock, User as UserIcon, Phone, Mail, ArrowLeft, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import bgImage from '../assets/open-book-wooden-table.jpg';
 import './Auth.css';
@@ -16,6 +17,7 @@ const pwRules = [
 const isPasswordValid = (p: string) => pwRules.every(r => r.test(p));
 
 export default function Auth({ onLogin }: { onLogin: () => void }) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>('login');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -51,6 +53,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
       localStorage.setItem('studybuddy_token', data.token);
       localStorage.setItem('studybuddy_user', JSON.stringify(data));
       onLogin();
+      navigate('/');
     } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
   };
 
@@ -78,6 +81,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
       localStorage.setItem('studybuddy_token', data.token);
       localStorage.setItem('studybuddy_user', JSON.stringify(data));
       onLogin();
+      navigate('/');
     } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
   };
 
@@ -172,7 +176,10 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
+            <div style={{ textAlign: 'center', marginTop: '-0.5rem', fontSize: '0.8rem', color: '#666' }}>
+              Test login: username "Aqua_Slovic", password "Wizzie07?"
+            </div>
+            <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
               <span className="switch-link" onClick={() => { setMode('forgot'); clearMessages(); }} style={{ fontSize: '0.85rem' }}>
                 Forgot Password?
               </span>
