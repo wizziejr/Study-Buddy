@@ -27,6 +27,7 @@ export default function Sidebar({ isMobileOpen }: SidebarProps) {
           <NavLink 
             key={item.name} 
             to={item.path} 
+            onClick={() => setIsMobileOpen(false)}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <item.icon className="nav-icon" size={20} />
@@ -35,12 +36,7 @@ export default function Sidebar({ isMobileOpen }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="sidebar-footer">
-        <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Settings className="nav-icon" size={20} />
-          <span>Settings</span>
-        </NavLink>
-      </div>
+      {/* Settings removed from sidebar per request */}
     </aside>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { User, Bell, Shield, Palette, Code2, Globe, Phone, GitBranch, Camera, Check, Loader2, Eye, EyeOff } from 'lucide-react';
+import { User, Bell, Shield, Palette, Code2, Globe, Phone, GitBranch, Camera, Check, Loader2, Eye, EyeOff, Menu } from 'lucide-react';
 // Developer photo — pic 1.jpeg from assets (copied to avoid space in filename)
 import devPhoto from '../assets/dev-photo.jpeg';
 
@@ -51,6 +51,7 @@ interface SettingsProps {
 
 export default function Settings({ setIsAuthenticated }: SettingsProps) {
   const [activeTab, setActiveTab] = useState('profile');
+  const [showMenu, setShowMenu] = useState(false);
 
   const storedUser = (() => { try { return JSON.parse(localStorage.getItem('studybuddy_user') || '{}'); } catch { return {}; } })();
 
@@ -58,12 +59,15 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
   const [profileForm, setProfileForm] = useState({
     username: storedUser.username || '',
     email: storedUser.email || '',
-    level: storedUser.level || 'MSCE',
+    level: storedUser.level || 'Form 4',
+    canViewAllSecondary: storedUser.canViewAllSecondary || false,
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(storedUser.avatar || null);
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(storedUser.profilePicUrl || storedUser.avatar || null);
+  const [bgSrc, setBgSrc] = useState<string | null>(storedUser.backgroundImageUrl || null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bgFileRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,17 +82,50 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
     reader.readAsDataURL(file);
   };
 
+  const handleBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result as string;
+      setBgSrc(src);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const saveProfile = async () => {
     setProfileSaving(true); setProfileMsg(null);
     try {
+      const formData = new FormData();
+      formData.append('username', profileForm.username);
+      formData.append('email', profileForm.email);
+      formData.append('level', profileForm.level);
+      formData.append('canViewAllSecondary', String(profileForm.canViewAllSecondary));
+      
+      const pFile = fileRef.current?.files?.[0];
+      if (pFile) formData.append('profilePic', pFile);
+      const bFile = bgFileRef.current?.files?.[0];
+      if (bFile) formData.append('backgroundPic', bFile);
+
+      const token = localStorage.getItem('studybuddy_token') || '';
       const res = await fetch(`${API}/api/auth/update-profile`, {
-        method: 'PUT', headers: authHeaders(), body: JSON.stringify(profileForm),
+        method: 'PUT', 
+        headers: { Authorization: `Bearer ${token}` }, // no content-type so fetch sets boundary
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) { setProfileMsg({ type: 'error', text: data.message }); return; }
-      const updated = { ...storedUser, ...data };
+      const updated = { ...storedUser, ...data, avatar: data.profilePicUrl || storedUser.avatar };
       localStorage.setItem('studybuddy_user', JSON.stringify(updated));
       setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
+      
+      // Update backgrounds right away if possible
+      if (data.backgroundImageUrl) {
+        document.body.style.backgroundImage = `url(http://localhost:5000${data.backgroundImageUrl})`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+      }
     } catch { setProfileMsg({ type: 'error', text: 'Network error. Make sure the server is running.' }); }
     finally { setProfileSaving(false); }
   };
@@ -97,7 +134,12 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
     if (window.confirm('Are you sure you want to sign out?')) {
       localStorage.removeItem('studybuddy_token');
       localStorage.removeItem('studybuddy_user');
-      if (setIsAuthenticated) setIsAuthenticated(false);
+      // setIsAuthenticated is a callback from parent (Navbar or page)
+      if (setIsAuthenticated) {
+        (setIsAuthenticated as unknown as () => void)();
+      } else {
+        window.location.href = '/login';
+      }
     }
   };
 
@@ -168,35 +210,60 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
     </div>
   );
 
-  return (
-    <div style={{ display: 'flex', gap: '1.5rem', minHeight: '100%' }}>
+  const tabBgMap: Record<string, string> = {
+    profile: '#161426',
+    notifications: '#0A1C14',
+    privacy: '#28140D',
+    appearance: '#0B2026',
+    developers: '#281219',
+  };
 
-      {/* ── Sidebar Tabs ── */}
-      <div className="glass-panel" style={{ width: '220px', flexShrink: 0, padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <h3 style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem', marginBottom: '0.5rem' }}>Settings</h3>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.75rem',
-              padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)',
-              border: 'none', cursor: 'pointer', fontFamily: 'var(--font-main)',
-              fontWeight: 500, fontSize: '0.9rem', textAlign: 'left', width: '100%',
-              transition: 'all 0.2s',
-              background: activeTab === tab.id ? 'var(--accent-primary)' : 'transparent',
-              color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)',
-              boxShadow: activeTab === tab.id ? '0 4px 15px var(--accent-glow)' : 'none',
-            }}
-          >
-            <tab.icon size={18} />
-            {tab.label}
-          </button>
-        ))}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', position: 'relative', background: tabBgMap[activeTab] || 'var(--bg-secondary)', transition: 'background 0.3s' }}>
+
+      {/* ── Menu Toggle Header ── */}
+      <div style={{ padding: '1rem', borderBottom: '1px solid var(--bg-glass-border)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <button 
+           onClick={() => setShowMenu(!showMenu)}
+           className="glass-button" 
+           style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}
+        >
+          <Menu size={18} />
+          <span style={{ fontWeight: 600 }}>{tabs.find(t => t.id === activeTab)?.label} ▾</span>
+        </button>
       </div>
 
+      {/* ── Overlay Menu List ── */}
+      {showMenu && (
+        <div className="glass-panel animate-fade-in" style={{
+           position: 'absolute', top: '70px', left: '1rem', width: '220px', zIndex: 100,
+           padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem',
+           boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+        }}>
+          <h3 style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.5rem', marginBottom: '0.25rem' }}>Menu Options</h3>
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setShowMenu(false); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)',
+                border: 'none', cursor: 'pointer', fontFamily: 'var(--font-main)',
+                fontWeight: 500, fontSize: '0.9rem', textAlign: 'left', width: '100%',
+                transition: 'all 0.2s',
+                background: activeTab === tab.id ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === tab.id ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Content Panel ── */}
-      <div className="glass-panel animate-fade-in" style={{ flex: 1, padding: '2rem' }}>
+      <div className="animate-fade-in" style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
 
         {/* ══ PROFILE ══ */}
         {activeTab === 'profile' && (
@@ -213,8 +280,8 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
                   overflow: 'hidden', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {avatarSrc
-                    ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {avatarSrc && avatarSrc.startsWith('/uploads') ? <img src={`http://localhost:5000${avatarSrc}`} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
+                     avatarSrc ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : <User size={36} color="#fff" />}
                 </div>
                 <button
@@ -230,10 +297,14 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{storedUser.username || 'Student'}</p>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{storedUser.phone || ''}</p>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{storedUser.role || 'USER'} · {storedUser.level || 'MSCE'}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{storedUser.role || 'USER'} · {storedUser.level || 'Form 4'}</p>
+                <button onClick={() => bgFileRef.current?.click()} className="glass-button" style={{ marginTop: '0.5rem', fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}>
+                   Change Background Image
+                </button>
+                <input ref={bgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBgChange} />
               </div>
             </div>
 
@@ -253,11 +324,22 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
               <div>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>Education Level</label>
                 <select className="glass-input" value={profileForm.level} onChange={e => setProfileForm(f => ({ ...f, level: e.target.value }))}>
+                  <option value="Standard 5">Standard 5</option>
+                  <option value="Standard 6">Standard 6</option>
+                  <option value="Standard 7">Standard 7</option>
                   <option value="Standard 8">Standard 8</option>
-                  <option value="JCE">JCE</option>
-                  <option value="MSCE">MSCE</option>
+                  <option value="Form 1">Form 1</option>
+                  <option value="Form 2">Form 2</option>
+                  <option value="Form 3">Form 3</option>
+                  <option value="Form 4">Form 4</option>
                 </select>
               </div>
+              {profileForm.level.includes("Form") && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <input type="checkbox" id="canViewAll" checked={profileForm.canViewAllSecondary} onChange={e => setProfileForm(f => ({ ...f, canViewAllSecondary: e.target.checked }))} />
+                  <label htmlFor="canViewAll" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>View notes for all secondary forms</label>
+                </div>
+              )}
 
               {profileMsg && <p style={msgStyle(profileMsg.type)}>{profileMsg.text}</p>}
 
@@ -476,9 +558,7 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
             {/* Credits */}
             <div style={{ marginTop: '2rem', padding: '1rem 1.5rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--bg-glass-border)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                <strong style={{ color: 'var(--text-primary)' }}>StudyBuddy</strong> — Built for Malawian students (Standard 8, JCE &amp; MSCE) ·
-                Powered by <strong style={{ color: 'var(--accent-primary)' }}>Google Gemini 1.5 Flash</strong> ·
-                Database on <strong>SQLite + Prisma</strong> · SMS via <strong>Africa's Talking</strong>.
+                Welcome to <strong style={{ color: 'var(--text-primary)' }}>StudyBuddy</strong>. The ultimate study platform.
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                 © {new Date().getFullYear()} Wisdom Malata / Aqua_Slovic. All rights reserved.

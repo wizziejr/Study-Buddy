@@ -69,6 +69,11 @@ const register = async (req, res) => {
       email: user.email,
       role: user.role,
       level: user.level,
+      profilePicUrl: null,
+      backgroundImageUrl: null,
+      currentStreak: 0,
+      studyTimeDaily: 0,
+      canViewAllSecondary: false,
       token: generateToken(user.id),
     });
   } catch (error) {
@@ -102,6 +107,11 @@ const login = async (req, res) => {
       email: user.email,
       role: user.role,
       level: user.level,
+      profilePicUrl: user.profilePicUrl,
+      backgroundImageUrl: user.backgroundImageUrl,
+      currentStreak: user.currentStreak,
+      studyTimeDaily: user.studyTimeDaily,
+      canViewAllSecondary: user.canViewAllSecondary,
       token: generateToken(user.id),
     });
   } catch (error) {
@@ -125,7 +135,7 @@ const getMe = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true, createdAt: true },
+      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true, createdAt: true, profilePicUrl: true, backgroundImageUrl: true, currentStreak: true, studyTimeDaily: true, canViewAllSecondary: true },
     });
     res.json(user);
   } catch (error) {
@@ -137,7 +147,7 @@ const getMe = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true, createdAt: true },
+      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true, createdAt: true, profilePicUrl: true, backgroundImageUrl: true, currentStreak: true, studyTimeDaily: true, canViewAllSecondary: true },
       orderBy: { createdAt: 'desc' },
     });
     res.json(users);
@@ -239,7 +249,7 @@ const changePassword = async (req, res) => {
 // ─── UPDATE PROFILE (authenticated) ──────────────────────────────────────────
 const updateProfile = async (req, res) => {
   try {
-    const { username, email, level } = req.body;
+    const { username, email, level, canViewAllSecondary, currentStreak, studyTimeDaily } = req.body;
     const data = {};
     if (username) {
       const existing = await prisma.user.findUnique({ where: { username } });
@@ -255,11 +265,24 @@ const updateProfile = async (req, res) => {
       }
       data.email = email;
     }
-    if (level) data.level = level;
+    if (level !== undefined) data.level = level;
+    if (canViewAllSecondary !== undefined) data.canViewAllSecondary = String(canViewAllSecondary) === 'true';
+    if (currentStreak !== undefined) data.currentStreak = Number(currentStreak);
+    if (studyTimeDaily !== undefined) data.studyTimeDaily = Number(studyTimeDaily);
+
+    if (req.files) {
+      if (req.files.profilePic && req.files.profilePic.length > 0) {
+        data.profilePicUrl = `/uploads/${req.files.profilePic[0].filename}`;
+      }
+      if (req.files.backgroundPic && req.files.backgroundPic.length > 0) {
+        data.backgroundImageUrl = `/uploads/${req.files.backgroundPic[0].filename}`;
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data,
-      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true },
+      select: { id: true, username: true, phone: true, email: true, role: true, level: true, points: true, profilePicUrl: true, backgroundImageUrl: true, currentStreak: true, studyTimeDaily: true, canViewAllSecondary: true },
     });
     res.json(user);
   } catch (error) {

@@ -11,19 +11,25 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  phone        String   @unique
-  email        String?  @unique
-  password     String
-  role         String   @default("USER") // USER or ADMIN
-  level        String?  // Standard 8, JCE, MSCE
-  points       Int      @default(0)
-  createdAt    DateTime @default(now())
+  id                   Int      @id @default(autoincrement())
+  username             String   @unique
+  phone                String   @unique
+  email                String?  @unique
+  password             String
+  role                 String   @default("USER") // USER or ADMIN
+  level                String?  // Standard 5, 6, 7, 8, Form 1, 2, 3, 4
+  points               Int      @default(0)
+  profilePicUrl        String?  
+  backgroundImageUrl   String?
+  currentStreak        Int      @default(0)
+  studyTimeDaily       Int      @default(0)
+  canViewAllSecondary  Boolean  @default(false)
+  createdAt            DateTime @default(now())
 
   notes         Note[]
   groupsCreated Group[]
   groupMessages GroupMessage[]
+  groupMemberships GroupMember[]
 }
 
 model OtpCode {
@@ -49,7 +55,7 @@ model Note {
   fileUrl      String
   type         String   // "NOTE" or "PAST_PAPER"
   isPublic     Boolean  @default(false)
-  category     String   // "Standard 8", "JCE", "MSCE"
+  category     String   // "Standard 5" to "Form 4"
   subject      String
   likes        Int      @default(0)
   uploaderId   Int
@@ -58,22 +64,42 @@ model Note {
 }
 
 model Group {
-  id           Int      @id @default(autoincrement())
-  name         String
-  description  String?
-  level        String   // "Standard 8", "JCE", "MSCE"
-  creatorId    Int
-  creator      User     @relation(fields: [creatorId], references: [id])
-  messages     GroupMessage[]
-  createdAt    DateTime @default(now())
+  id                 Int      @id @default(autoincrement())
+  name               String
+  description        String?
+  level              String   
+  iconUrl            String?
+  backgroundImageUrl String?
+  rules              String?
+  creatorId          Int
+  creator            User     @relation(fields: [creatorId], references: [id])
+  members            GroupMember[]
+  messages           GroupMessage[]
+  createdAt          DateTime @default(now())
+}
+
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("MEMBER") // ADMIN or MEMBER
+  isBanned  Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+
+  @@unique([groupId, userId])
 }
 
 model GroupMessage {
   id           Int      @id @default(autoincrement())
   content      String
   groupId      Int
-  group        Group    @relation(fields: [groupId], references: [id])
+  group        Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   senderId     Int
   sender       User     @relation(fields: [senderId], references: [id])
+  isEdited     Boolean  @default(false)
+  isDeleted    Boolean  @default(false)
+  isForwarded  Boolean  @default(false)
   createdAt    DateTime @default(now())
 }
