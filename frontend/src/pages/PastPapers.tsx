@@ -73,7 +73,7 @@ export default function PastPapers() {
     <div className="dashboard">
       <div className="dashboard-header" style={{borderBottom: '1px solid var(--bg-glass-border)', paddingBottom: '1.5rem', display: 'flex', justifyContent: 'space-between'}}>
         <div>
-          <h2 className="greeting" style={{color: '#4DA1FF'}}>Past Papers Database 📑</h2>
+          <h2 className="greeting" style={{color: '#4DA1FF'}}>Past Papers</h2>
           <p className="subtitle">Extensive archive of MANEB exams and mock papers.</p>
         </div>
         <button className="glass-button primary" onClick={() => setShowUploadModal(true)}>

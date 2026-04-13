@@ -170,7 +170,7 @@ export default function StudyGroups() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: '100%', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 700 }}>Study Groups 🎓</h2>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 700 }}>Study Groups </h2>
               <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Create and join communities to collaborate with other students.</p>
             </div>
             <button className="glass-button primary" onClick={() => { setShowCreateModal(true); setError(''); }}>

@@ -83,7 +83,7 @@ export default function NotesLibrary() {
     <div className="notes-container">
       <div className="notes-header">
         <div>
-          <h2 className="greeting" style={{color: 'var(--accent-primary)'}}>Notes Library 📚</h2>
+          <h2 className="greeting" style={{color: 'var(--accent-primary)'}}>Notes Library </h2>
           <p className="subtitle">Discover, share, and study community notes.</p>
         </div>
         <button className="glass-button primary" onClick={() => setShowUploadModal(true)}>
@@ -103,9 +103,9 @@ export default function NotesLibrary() {
               <input type="text" className="glass-input" placeholder="Title" required value={uploadData.title} onChange={e => setUploadData({...uploadData, title: e.target.value})} />
               <input type="text" className="glass-input" placeholder="Subject (e.g. Mathematics)" required value={uploadData.subject} onChange={e => setUploadData({...uploadData, subject: e.target.value})} />
               <select className="glass-input" value={uploadData.category} onChange={e => setUploadData({...uploadData, category: e.target.value})}>
-                <option value="Standard 8">Standard 8</option>
-                <option value="JCE">JCE</option>
-                <option value="MSCE">MSCE</option>
+                <option value="Standard 8" style={{color: 'var(--text-primary)', background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)'}}>Standard 8</option>
+                <option value="JCE" style={{color: 'var(--text-primary)', background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)'}}>JCE</option>
+                <option value="MSCE" style={{color: 'var(--text-primary)', background: 'var(--bg-glass)', border: '1px solid var(--bg-glass-border)'}}>MSCE</option>
               </select>
               <textarea className="glass-input" placeholder="Short description" rows={3} value={uploadData.description} onChange={e => setUploadData({...uploadData, description: e.target.value})}></textarea>
               <input type="file" ref={fileInputRef} className="glass-input" style={{padding: '0.5rem'}} required />
