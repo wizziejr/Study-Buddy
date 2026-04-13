@@ -18,22 +18,14 @@ const { protect, admin } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-const uploadDir = 'uploads/';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'));
-  }
+// Use memory storage for direct DB storage (Base64)
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
-const upload = multer({ storage: storage });
 
-router.post('/register', register);
+router.post('/register', upload.fields([{ name: 'profilePic', maxCount: 1 }]), register);
 router.post('/login', login);
 router.post('/validate-username', validateUsername);
 router.get('/me', protect, getMe);

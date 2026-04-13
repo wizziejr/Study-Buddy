@@ -303,7 +303,11 @@ export default function StudyGroups() {
 
         {/* Settings / Members Sidebar */}
         {showSettingsSidebar && (
-            <div className="group-settings-panel glass-panel animate-fade-in" style={{ width: '320px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+            <div className="group-settings-panel animate-fade-in" style={{ 
+                width: '320px', display: 'flex', flexDirection: 'column', overflowY: 'auto',
+                background: 'var(--bg-secondary)', borderLeft: '1px solid var(--bg-glass-border)',
+                boxShadow: '-4px 0 16px rgba(0,0,0,0.3)', zIndex: 10
+            }}>
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--bg-glass-border)' }}>
                     <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>About Group</h3>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{activeGroup.description || 'No description provided.'}</p>

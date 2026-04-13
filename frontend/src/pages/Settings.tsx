@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { User, Bell, Shield, Palette, Code2, Globe, Phone, GitBranch, Camera, Check, Loader2, Eye, EyeOff, Menu } from 'lucide-react';
-// Developer photo — pic 1.jpeg from assets (copied to avoid space in filename)
+// Developer photos
 import devPhoto from '../assets/dev-photo.jpeg';
+import empPhoto from '../assets/emp.jpeg';
 
 const API = '';
 function authHeaders() {
@@ -494,61 +495,95 @@ export default function Settings({ setIsAuthenticated }: SettingsProps) {
             <h2 style={{ marginBottom: '0.5rem' }}>Developers</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem' }}>The minds behind this platform.</p>
 
-            <div style={{
-              display: 'flex', gap: '2rem', alignItems: 'flex-start',
-              padding: '2rem', borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, rgba(108,93,211,0.12), rgba(255,117,76,0.05))',
-              border: '1px solid rgba(108,93,211,0.3)', flexWrap: 'wrap',
-            }}>
-              {/* Photo */}
-              <div style={{ flexShrink: 0 }}>
-                <img
-                  src={devPhoto}
-                  alt="Wisdom Malata"
-                  style={{
-                    width: '130px', height: '130px', borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '3px solid var(--accent-primary)',
-                    boxShadow: '0 0 24px var(--accent-glow)',
-                  }}
-                />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              {/* Wisdom Malata */}
+              <div style={{
+                display: 'flex', gap: '2rem', alignItems: 'flex-start',
+                padding: '2rem', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, rgba(108,93,211,0.12), rgba(255,117,76,0.05))',
+                border: '1px solid rgba(108,93,211,0.3)', flexWrap: 'wrap',
+              }}>
+                <div style={{ flexShrink: 0 }}>
+                  <img
+                    src={devPhoto}
+                    alt="Wisdom Malata"
+                    style={{
+                      width: '130px', height: '130px', borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '3px solid var(--accent-primary)',
+                      boxShadow: '0 0 24px var(--accent-glow)',
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Wisdom Malata</h3>
+                    <span style={{
+                      background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))',
+                      padding: '0.2rem 0.6rem', borderRadius: '99px', fontSize: '0.7rem',
+                      fontWeight: 700, color: '#fff', letterSpacing: '0.05em',
+                    }}>AQUA_SLOVIC</span>
+                  </div>
+                  <p style={{ color: 'var(--accent-secondary)', fontWeight: 600, marginBottom: '1rem', fontSize: '0.95rem' }}>
+                    Founder & Lead Developer
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                    Wisdom Malata is the visionary architect behind StudyBuddy. Driven by a mission to democratize
+                    education in Malawi, he engineered the entire platform from the core database systems to
+                    the premium user experience. His dedication ensures that every student has a digital
+                    partner in their academic journey.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <a href="https://github.com/Aqua-Slovic" target="_blank" rel="noopener noreferrer" className="glass-button" style={{ textDecoration: 'none', gap: '0.5rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
+                      <GitBranch size={15} /> GitHub
+                    </a>
+                  </div>
+                </div>
               </div>
 
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Wisdom Malata</h3>
-                  <span style={{
-                    background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))',
-                    padding: '0.2rem 0.6rem', borderRadius: '99px', fontSize: '0.7rem',
-                    fontWeight: 700, color: '#fff', letterSpacing: '0.05em',
-                  }}>LEAD DEV</span>
+              {/* Prince Mtipe */}
+              <div style={{
+                display: 'flex', gap: '2rem', alignItems: 'flex-start',
+                padding: '2rem', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, rgba(77,161,255,0.12), rgba(0,200,117,0.05))',
+                border: '1px solid rgba(77,161,255,0.3)', flexWrap: 'wrap',
+              }}>
+                <div style={{ flexShrink: 0 }}>
+                  <img
+                    src={empPhoto}
+                    alt="Prince Mtipe"
+                    style={{
+                      width: '130px', height: '130px', borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '3px solid #4DA1FF',
+                      boxShadow: '0 0 24px rgba(77,161,255,0.4)',
+                    }}
+                  />
                 </div>
-                <p style={{ color: 'var(--accent-secondary)', fontWeight: 600, marginBottom: '1rem', fontSize: '0.95rem' }}>
-                  Full Stack Developer &amp; Software Engineer
-                </p>
-                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                  Wisdom Malata is a passionate Full Stack Developer from Malawi, dedicated to bridging
-                  the digital gap in African education. He designed and built this platform from the
-                  ground up — from database architecture and REST API design to the premium glassmorphism
-                  UI — with the mission of giving every Malawian student access to world-class learning
-                  tools. Proficient in React, Node.js, Python, and modern software engineering practices.
-                </p>
-
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <a href="https://wisdom-malata.vercel.app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Prince Mtipe</h3>
+                    <span style={{
+                      background: 'linear-gradient(90deg, #4DA1FF, #00C875)',
+                      padding: '0.2rem 0.6rem', borderRadius: '99px', fontSize: '0.7rem',
+                      fontWeight: 700, color: '#fff', letterSpacing: '0.05em',
+                    }}>EMPRIN</span>
+                  </div>
+                  <p style={{ color: '#4DA1FF', fontWeight: 600, marginBottom: '1rem', fontSize: '0.95rem' }}>
+                    Front End Developer & Software Engineer
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                    "I believe that software should not only be functional but beautiful and intuitive. 
+                    As a Front End Developer, my goal with StudyBuddy is to create an interface that 
+                    inspires students to learn. Every pixel and every interaction is designed to make 
+                    studying feel like a premium experience, because every student deserves the best 
+                    tools to succeed."
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                     <button className="glass-button" style={{ gap: '0.5rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
-                      <Globe size={15} /> Portfolio
+                      <Code2 size={15} /> Software Engineer
                     </button>
-                  </a>
-                  <a href="https://github.com/Aqua-Slovic" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                    <button className="glass-button" style={{ gap: '0.5rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
-                      <GitBranch size={15} /> GitHub
-                    </button>
-                  </a>
-                  <button className="glass-button" style={{ gap: '0.5rem', fontSize: '0.85rem', padding: '0.5rem 1rem', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}>
-                    <Phone size={15} /> +265 992 393 452
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>

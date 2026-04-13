@@ -30,11 +30,23 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
   const [regData, setRegData] = useState({
     username: '', phoneSuffix: '', email: '', password: '', confirmPassword: '', level: 'MSCE'
   });
+  const [regProfilePic, setRegProfilePic] = useState<File | null>(null);
+  const [regPicPreview, setRegPicPreview] = useState<string | null>(null);
 
   // Forgot / OTP fields
   const [forgotPhone, setForgotPhone] = useState('');
   const [otpData, setOtpData] = useState({ otp: '', newPassword: '', confirmPassword: '' });
   const [pendingPhone, setPendingPhone] = useState('');
+
+  const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setRegProfilePic(file);
+      const reader = new FileReader();
+      reader.onload = () => setRegPicPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   const clearMessages = () => { setError(''); setSuccess(''); };
 
@@ -65,16 +77,18 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
     if (regData.password !== regData.confirmPassword) return setError("Passwords don't match");
     const phone = '+265' + regData.phoneSuffix.replace(/^0+/, '');
     try {
+      const formData = new FormData();
+      formData.append('username', regData.username);
+      formData.append('phone', phone);
+      if (regData.email) formData.append('email', regData.email);
+      formData.append('password', regData.password);
+      formData.append('level', regData.level);
+      if (regProfilePic) formData.append('profilePic', regProfilePic);
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: regData.username,
-          phone,
-          email: regData.email || undefined,
-          password: regData.password,
-          level: regData.level,
-        }),
+        // No Content-Type header so browser sets multipart boundary
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -165,7 +179,7 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
           <form onSubmit={handleLogin} className="auth-form">
             <div className="input-group">
               <Phone className="input-icon" size={18} />
-              <input type="text" placeholder="Phone (+265...), Username, or Email" className="glass-input auth-input" required
+              <input type="text" placeholder="Add unique name as an example" className="glass-input auth-input" required
                 value={loginData.identifier} onChange={e => setLoginData({ ...loginData, identifier: e.target.value })} />
             </div>
             <div className="input-group">
@@ -191,6 +205,15 @@ export default function Auth({ onLogin }: { onLogin: () => void }) {
         {/* ────────────── REGISTER ─────────────────────────────────────────── */}
         {mode === 'register' && (
           <form onSubmit={handleRegister} className="auth-form">
+            {/* Profile Pic Upload */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+               <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px solid var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {regPicPreview ? <img src={regPicPreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <UserIcon size={32} style={{ opacity: 0.3 }} />}
+                  <input type="file" accept="image/*" onChange={onPicChange} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} title="Upload Profile Picture" />
+               </div>
+               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Upload Profile Picture (Optional)</span>
+            </div>
+
             <div className="input-group">
               <UserIcon className="input-icon" size={18} />
               <input type="text" placeholder="Unique Username" className="glass-input auth-input" required

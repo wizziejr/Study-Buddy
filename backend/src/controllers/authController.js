@@ -52,6 +52,14 @@ const register = async (req, res) => {
     if (pwError) return res.status(400).json({ message: pwError });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let profilePicUrl = null;
+    if (req.files && req.files.profilePic && req.files.profilePic.length > 0) {
+      const file = req.files.profilePic[0];
+      const base64 = file.buffer.toString('base64');
+      profilePicUrl = `data:${file.mimetype};base64,${base64}`;
+    }
+
     const user = await prisma.user.create({
       data: {
         username,
@@ -59,6 +67,7 @@ const register = async (req, res) => {
         email: email || null,
         password: hashedPassword,
         level: level || null,
+        profilePicUrl,
       },
     });
 
@@ -274,10 +283,14 @@ const updateProfile = async (req, res) => {
 
     if (req.files) {
       if (req.files.profilePic && req.files.profilePic.length > 0) {
-        data.profilePicUrl = `/uploads/${req.files.profilePic[0].filename}`;
+        const file = req.files.profilePic[0];
+        const base64 = file.buffer.toString('base64');
+        data.profilePicUrl = `data:${file.mimetype};base64,${base64}`;
       }
       if (req.files.backgroundPic && req.files.backgroundPic.length > 0) {
-        data.backgroundImageUrl = `/uploads/${req.files.backgroundPic[0].filename}`;
+        const file = req.files.backgroundPic[0];
+        const base64 = file.buffer.toString('base64');
+        data.backgroundImageUrl = `data:${file.mimetype};base64,${base64}`;
       }
     }
 
