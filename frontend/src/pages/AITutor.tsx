@@ -80,7 +80,7 @@ export default function AITutor() {
           fontSize: '0.9rem',
           color: 'var(--text-muted)'
         }}>
-          Stay tuned for the launch of the most powerful study tool in Africa.
+          Stay tuned for the launch of the study buddy AI tutor.
         </div>
       </div>
 

@@ -66,7 +66,7 @@ export default function Dashboard() {
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
-          <h2 className="greeting">Welcome back, {user.username || 'Student'}! 👋</h2>
+          <h2 className="greeting">Welcome back, {user.username || 'Student'}! </h2>
           <p className="subtitle">You're on a {user.currentStreak || 0}-day study streak. Keep it up!</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             <Phone size={14} /> {user.phone || 'No phone added'}

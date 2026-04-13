@@ -114,7 +114,7 @@ export default function AdminDashboard() {
     <div className="dashboard">
       <div className="dashboard-header" style={{borderBottom: '1px solid var(--bg-glass-border)', paddingBottom: '1.5rem'}}>
         <div>
-          <h2 className="greeting" style={{color: 'var(--accent-secondary)'}}>System Admin Portal 🛡️</h2>
+          <h2 className="greeting" style={{color: 'var(--accent-secondary)'}}>System Admin Portal </h2>
           <p className="subtitle">Manage users, content, and monitor platform health.</p>
         </div>
       </div>
